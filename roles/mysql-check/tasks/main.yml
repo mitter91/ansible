@@ -1,0 +1,61 @@
+- name: user for msg-service
+  include_role:
+    name: user
+  vars:
+    user_name: "{{ mysql_check_user | default('mysql-check') }}"
+    user_group: "{{ mysql_check_user | default('mysql-check') }}"
+
+- name: dir
+  become: yes
+  file:
+    name: "{{ item }}"
+    state: directory
+    owner: "{{ mysql_check_user | default('mysql-check') }}"
+    group: "{{ mysql_check_user | default('mysql-check') }}"
+    recurse: yes
+  with_items:
+    - "{{ mysql_check_dir }}/bin"
+    - "{{ mysql_check_dir }}/conf"
+
+- name: Download file
+  get_url:
+    url: https://playpit-labs-assets.s3-eu-west-1.amazonaws.com/mysql-check/mysql-check
+    dest: "{{ mysql_check_dir }}/bin"
+    owner: "{{ mysql_check_user | default('mysql-check') }}"
+    group: "{{ mysql_check_user | default('mysql-check') }}"
+    mode: 0755
+  become: yes
+
+- name: Copy configuration file
+  become: yes
+  template:
+    src: mysql-check.config
+    dest: "{{ mysql_check_dir }}/conf"
+    owner: "{{ mysql_check_user | default('mysql-check') }}"
+    group: "{{ mysql_check_user | default('mysql-check') }}"
+    mode: 0644
+  notify:
+    - restart mysql-check
+    - mysql_check_fact
+
+- name: Copy systemd file
+  become: yes
+  template:
+    src: mysql-check.service
+    dest: /lib/systemd/system/mysql-check.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart mysql-check
+
+- name: Check service for running status
+  become: yes
+  systemd:
+    name: mysql-check.service
+    state: started
+    enabled: yes
+  notify:
+    - restart mysql-check
+
+

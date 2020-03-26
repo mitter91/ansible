@@ -1,0 +1,30 @@
+- name: install staff
+  become: yes
+  package:
+    name: "{{ item }}"
+  with_items:
+    - epel-release
+    - nginx
+    - python
+    - python-pip
+    - curl
+    - wget
+    - sudo
+
+- name: Install for mysql
+  become: yes
+  pip:
+    name: "{{ item }}"
+  with_items:
+    - PyMySQL
+    - cryptography
+
+- name: Esure Ansible Facts Dir exists
+  file: path=/etc/ansible/facts.d state=directory recurse=yes
+  become: yes
+
+- lineinfile:
+    path: /etc/sudoers
+    regexp: '^Defaults'
+    line: 'Defaults        !requiretty'
+  become: yes  

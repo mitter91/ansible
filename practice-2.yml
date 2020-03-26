@@ -1,0 +1,83 @@
+- hosts: gloglo
+
+  vars:
+    student_first_name: "Artsemi"
+    student_last_name: "Yoursh"
+
+  roles:
+#    - base
+    - role: mysql_db
+      vars:
+        root_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          65623332323363333737376438396133613934356233386362343732636538616464373935636166
+          3639386632306466353563663437323163363636326266340a623232306266373665356234303037
+          61346333666138663835343366356538623533393065333937643136363461656231313532366335
+          3136376439633837610a303035313733353366306232613563353031613466616533306531396230
+          3830
+      meta: flush_handlers
+
+    - role: mysql_db_user
+      vars:
+        mysql_user: "ayoursh"
+        mysql_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          65623332323363333737376438396133613934356233386362343732636538616464373935636166
+          3639386632306466353563663437323163363636326266340a623232306266373665356234303037
+          61346333666138663835343366356538623533393065333937643136363461656231313532366335
+          3136376439633837610a303035313733353366306232613563353031613466616533306531396230
+          3830
+        mysql_user_pivileges: "*.*:ALL" 
+        mysql_db_user_database: "production"
+      meta: flush_handlers
+
+    - role: mysql-check
+      vars:
+        mysql_check_port: "8082"
+      meta: flush_handlers
+
+    - role: msg-service
+      vars:
+        app_user: "msg-service"
+        app_group: "msg-service"
+        app_home: "/opt/msg-service/"
+        app_msg_message: "<i class='far fa-thumbs-up'></i>Hail to the Ansible<p style='font-size: 16pt'>Student: {{ student_first_name }} {{ student_last_name }}</p>"
+        app_port: "8080"
+#        app_msg_header: "BLABLABLA"
+      meta: flush_handlers
+
+- hosts: gloglo
+  tasks:
+  - name: Check msg-service service
+    service: name=msg-service state=started enabled=yes
+    become: yes
+
+  - name: Check msg-service process via shell
+    shell: ps -eo cmd | grep -v grep | grep msg-server
+    args:
+      warn: false
+
+  - name: Get service on port 8080
+    command: 'netstat -tunlp | grep ":8080  "'
+    register: test
+    failed_when: not 'msg-server' in test.stdout
+    changed_when: false
+    become: yes
+
+  - name: Check if msg-service show right student name
+    shell: curl -sL localhost:8080 | grep 'Artsemi Yoursh'
+    args:
+      warn: false
+
+  - name: Check mysqld service
+    service: name=mysqld state=started enabled=yes
+    become: yes
+
+  - name: Check mysql-check service
+    service: name=mysql-check state=started enabled=yes
+    become: yes
+
+  - name: Check if mysql-check is available
+    shell: curl -sL -w "%{http_code}" localhost:8082 -o /dev/null | grep 200
+    args:
+      warn: false

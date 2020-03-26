@@ -1,0 +1,2 @@
+Defaults:devops !requiretty
+devops ALL=(ALL) NOPASSWD: ALL, !/usr/bin/su, !/usr/bin/passwd, !/usr/bin/chattr

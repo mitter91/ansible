@@ -1,0 +1,45 @@
+- name: installing repo
+  become: yes
+  yum:
+    name: https://repo.mysql.com//mysql80-community-release-el7-3.noarch.rpm
+    state: present
+
+- name: installing repo
+  become: yes
+  yum:
+    name: mysql-community-server
+    state: present
+
+- name: init
+  become: yes
+  shell: mysqld --initialize-insecure --user=mysql | cat
+  when: ansible_local.mysql is undefined or not ansible_local.mysql.base_initialized
+  notify:
+    - mysql_fact
+
+- name: running
+  become: yes
+  systemd:
+    name: mysqld
+    state: started
+    enabled: yes
+  notify:
+    - restart mysql
+
+- name: password establishing
+  become: yes
+  shell: echo "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ root_password | mandatory }}';" | mysql -u root --skip-password
+  when: ansible_local.mysql is undefined or not ansible_local.mysql.root_passw_established
+  notify:
+    - mysql_fact
+
+- name: copy cnf
+  become: yes
+  template:
+    src: my.cnf
+    dest: "~/.my.cnf"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - mysql_fact
