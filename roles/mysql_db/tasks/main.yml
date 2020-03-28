@@ -7,12 +7,15 @@
 - name: installing repo
   become: yes
   yum:
-    name: mysql-community-server
+    name:
+      - mysql-community-server
+      - mysql-community-devel
     state: present
 
+# Just shell command for initilasation of db
 - name: init
   become: yes
-  shell: mysqld --initialize-insecure --user=mysql | cat
+  command: mysqld --initialize-insecure --user=mysql
   when: ansible_local.mysql is undefined or not ansible_local.mysql.base_initialized
   notify:
     - mysql_fact
@@ -26,20 +29,13 @@
   notify:
     - restart mysql
 
+# Unfortunately mysql_query is not in the list of ansible default modules
+# it's a community module and it's not available by default
 - name: password establishing
   become: yes
-  shell: echo "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ root_password | mandatory }}';" | mysql -u root --skip-password
+  shell: set -o pipefail && echo "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ root_password | mandatory }}';" | mysql -u root --skip-password
   when: ansible_local.mysql is undefined or not ansible_local.mysql.root_passw_established
   notify:
     - mysql_fact
 
-- name: copy cnf
-  become: yes
-  template:
-    src: my.cnf
-    dest: "~/.my.cnf"
-    owner: root
-    group: root
-    mode: 0644
-  notify:
-    - mysql_fact
+

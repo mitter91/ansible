@@ -3,22 +3,22 @@
 
 - name: mysql_user_fact
   become: yes
-  copy: 
+  copy:
     content: >
-         {    
-               "exist": true,
-               "name": "{{ mysql_db_user_database }}",
-               "user": "{{ mysql_user }}"
-         }           
-    dest: "/etc/ansible/facts.d/mysql_user_{{ mysql_user }}.fact"
+      {
+          "exist": true,
+          "name": "{{ mysql_db_user_database }}",
+          "user": "{{ mysql_user }}"
+      }
+    dest: "/etc/ansible/facts.d/mysql_user.fact"
 
 - name: mysql_db_fact
   become: yes
-  copy: 
+  copy:
     content: >
-         {    
-               "exist": true,
-               "name": "{{ mysql_user }}",
-               "privs": "{{ mysql_user_pivileges }}"
-         }          
-    dest: "/etc/ansible/facts.d/mysql_db_{{ mysql_db_user_database }}.fact"
+      {
+          "exist": true,
+          "name": "{{ mysql_user }}",
+          "privs": "{{ mysql_user_pivileges }}"
+      }
+    dest: "/etc/ansible/facts.d/mysql_db.fact"

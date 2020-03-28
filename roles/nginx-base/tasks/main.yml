@@ -1,0 +1,11 @@
+- name: nginx
+  become: yes
+  package:
+    name: "nginx"
+
+- name: running
+  become: yes
+  systemd:
+    name: nginx.service
+    state: started
+    enabled: yes

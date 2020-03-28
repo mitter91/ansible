@@ -1,18 +1,19 @@
 - name: restart mysql
   systemd:
-   name: mysql-check
+   name: mysqld
    daemon_reload: yes
    state: restarted
   become: yes
 
 - name: mysql_fact
   become: yes
-  copy: 
+  copy:
     content: >
-         {    
-               "base_initialized": true,
-               "root_passw_established": true,
-               "mysql_v": 8,
-               "installation_time": "{{ ansible_date_time.iso8601 }}"
-         }           
+      {
+          "base_initialized": true,
+          "root_passw_established": true,
+          "mysql_v": 8,
+          "installation_time": "{{ ansible_date_time.iso8601 }}"
+      }
     dest: /etc/ansible/facts.d/mysql.fact
+

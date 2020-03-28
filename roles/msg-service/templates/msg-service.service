@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-EnvironmentFile=/opt/msg-service/conf/msg-service.conf
-ExecStart=/opt/msg-service/bin/msg-server
+EnvironmentFile={{ app_home}}/conf/msg-service.conf
+ExecStart={{ app_home}}/bin/msg-server
 ExecStop=/bin/kill -s QUIT $MAINPID
 User=msg-service
 Group=msg-service

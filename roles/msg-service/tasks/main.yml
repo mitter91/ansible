@@ -5,12 +5,7 @@
   vars:
     user_name: "{{ app_user | default('msg-service') }}"
     user_group: "{{ app_group | default('msg-service') }}"
-
-- name: user for msg-service
-  become: yes
-  user:
-    name: msg_user.user
-    append: yes
+  when: ansible_local.msg_service is undefined or not ansible_local.msg_service.USER_INIT
 
 - name: dir
   become: yes
@@ -20,7 +15,7 @@
     owner: "{{ app_user | default('msg-service') }}"
     group: "{{ app_group | default('msg-service') }}"
     recurse: yes
-  with_items:
+  loop:
     - "{{ app_home }}/bin"
     - "{{ app_home }}/conf"
 
@@ -31,28 +26,27 @@
     dest: "{{ app_home | default('/opt/msg-service') }}/bin"
     mode: 0755
 
-- name: Copy configuration file
+- name: copy templates
   become: yes
-  template:
-    src: msg-service.config
-    dest: "{{ app_home}}/conf/msg-server.conf"
-    owner: "{{ app_user | default('msg-service') }}"
-    group: "{{ app_group | default('msg-service') }}"
-    mode: 0644
+  template: src={{ item.src }} dest={{ item.dest }} owner={{ item.owner }} group={{ item.group }} mode={{ item.mode }}
+  loop:
+    - { src: msg-service.config,
+        dest: "{{ app_home }}/conf/msg-service.conf",
+        owner: "{{ app_user | default('msg-service') }}",
+        group: "{{ app_group | default('msg-service') }}",
+        mode: "0644" }
+    - { src: msg-service.service,
+        dest: "{{ sysd }}/msg-service.service",
+        owner: root,
+        group: root,
+        mode: "0644" }
   notify:
     - service_start
+    - msg_service_fact
 
-- name: copy sysd
-  become: yes
-  template:
-    src: msg-service.service
-    dest: "{{ sysd }}/msg-service.service"
-    owner: root
-    group: root
-    mode: 0644
-  notify:
-    - service_start
-    - Creating custom fact
+- name: msg_service_port_fact
+  set_fact:
+     msg_service_port: "{{ app_port }}"
 
 - name: running
   become: yes

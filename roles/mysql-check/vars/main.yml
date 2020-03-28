@@ -1,1 +1,2 @@
-mysql_check_dir: /opt/mysql-check/
+mysql_check_dir: /opt/mysql-check
+sysd: /lib/systemd/system

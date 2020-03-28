@@ -4,7 +4,6 @@
     name: "{{ item }}"
   with_items:
     - epel-release
-    - nginx
     - python
     - python-pip
     - curl
@@ -18,13 +17,15 @@
   with_items:
     - PyMySQL
     - cryptography
+  when: inventory_hostname == "db_tier"
 
 - name: Esure Ansible Facts Dir exists
-  file: path=/etc/ansible/facts.d state=directory recurse=yes
   become: yes
+  file: path=/etc/ansible/facts.d state=directory recurse=yes
 
-- lineinfile:
+- name: sudoers
+  become: yes
+  lineinfile:
     path: /etc/sudoers
     regexp: '^Defaults'
     line: 'Defaults        !requiretty'
-  become: yes  

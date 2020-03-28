@@ -1,14 +1,18 @@
 ---
 # tasks file for mysql_db_user
 
+# Unfortunately this module creates only local users ('user'@'localhost')
+# So using that we couldn't connect from any remote host, msql-check will failed
 - name: db user
   become: yes
   mysql_user:
-    name: "{{ mysql_user | default('ayoursh') }}"
-    password: "{{ mysql_password | default('pAssw0rd') }}"
+    login_user: root
+    login_password: "{{ root_password | mandatory }}"
+    name: "{{ mysql_user | mandatory }}"
+    password: "{{ mysql_password | mandatory }}"
     priv: "{{ mysql_user_pivileges | default('*.*:ALL') }}"
     state: present
-  when: ansible_local.mysql_user_{{ mysql_user }} is undefined or not ansible_local.mysql_user_{{ mysql_user }}.exist
+  when: ansible_local.mysql_user is undefined or not ansible_local.mysql_user.exist
   notify:
     - mysql_user_fact
 
@@ -17,8 +21,8 @@
   mysql_db:
     name: "{{ mysql_db_user_database | default('production') }}"
     state: present
-    login_user: "{{ mysql_user | default('yoursh') }}"
-    login_password: "{{ mysql_password | default('pAssw0rd') }}"
-  when: ansible_local.mysql_db_{{ mysql_db_user_database }} is undefined or not ansible_local.mysql_db_{{ mysql_db_user_database }}.exist
+    login_user: "{{ mysql_user | mandatory }}"
+    login_password: "{{ mysql_password | mandatory }}"
+  when: ansible_local.mysql_db is undefined or not ansible_local.mysql_db.exist
   notify:
     - mysql_db_fact

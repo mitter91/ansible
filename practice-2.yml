@@ -1,11 +1,7 @@
-- hosts: gloglo
-
-  vars:
-    student_first_name: "Artsemi"
-    student_last_name: "Yoursh"
+- hosts: db_tier
 
   roles:
-#    - base
+    - base
     - role: mysql_db
       vars:
         root_password: !vault |
@@ -15,10 +11,16 @@
           61346333666138663835343366356538623533393065333937643136363461656231313532366335
           3136376439633837610a303035313733353366306232613563353031613466616533306531396230
           3830
-      meta: flush_handlers
 
     - role: mysql_db_user
       vars:
+        root_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          65623332323363333737376438396133613934356233386362343732636538616464373935636166
+          3639386632306466353563663437323163363636326266340a623232306266373665356234303037
+          61346333666138663835343366356538623533393065333937643136363461656231313532366335
+          3136376439633837610a303035313733353366306232613563353031613466616533306531396230
+          3830
         mysql_user: "ayoursh"
         mysql_password: !vault |
           $ANSIBLE_VAULT;1.1;AES256
@@ -27,57 +29,46 @@
           61346333666138663835343366356538623533393065333937643136363461656231313532366335
           3136376439633837610a303035313733353366306232613563353031613466616533306531396230
           3830
-        mysql_user_pivileges: "*.*:ALL" 
+        mysql_user_pivileges: "*.*:ALL"
         mysql_db_user_database: "production"
-      meta: flush_handlers
 
-    - role: mysql-check
-      vars:
-        mysql_check_port: "8082"
-      meta: flush_handlers
 
+- hosts: app_tier
+
+  vars:
+    student_first_name: "Artsemi"
+    student_last_name: "Yoursh"
+
+  roles:
+    - base
     - role: msg-service
       vars:
         app_user: "msg-service"
         app_group: "msg-service"
-        app_home: "/opt/msg-service/"
-        app_msg_message: "<i class='far fa-thumbs-up'></i>Hail to the Ansible<p style='font-size: 16pt'>Student: {{ student_first_name }} {{ student_last_name }}</p>"
-        app_port: "8080"
-#        app_msg_header: "BLABLABLA"
-      meta: flush_handlers
+        app_home: "/opt/msg-service"
+# tried to use regex_replace with named groups, but it didn't work
+        app_msg_message: "<i class='far fa-thumbs-up'></i>Hail to the Ansible<p style='font-size: \
+          16pt'>Student: {{ student_first_name | lower | regex_replace('^a.*t(.*)$', 'a \\1') }} \
+          {{ student_last_name | regex_replace('^Y.*r(.*)$', '\\1') | upper }}</p>"
+        app_port: "8081"
+        app_msg_header: "<img width=250 src=https://www.md-webdesigner.com/objectif-libre/wp-content/uploads/2017/05/Ansible.png>"
 
-- hosts: gloglo
-  tasks:
-  - name: Check msg-service service
-    service: name=msg-service state=started enabled=yes
-    become: yes
+    - role: mysql-check
+      vars:
+        mysql_check_port: "8082"
 
-  - name: Check msg-service process via shell
-    shell: ps -eo cmd | grep -v grep | grep msg-server
-    args:
-      warn: false
 
-  - name: Get service on port 8080
-    command: 'netstat -tunlp | grep ":8080  "'
-    register: test
-    failed_when: not 'msg-server' in test.stdout
-    changed_when: false
-    become: yes
+- hosts: web_tier
 
-  - name: Check if msg-service show right student name
-    shell: curl -sL localhost:8080 | grep 'Artsemi Yoursh'
-    args:
-      warn: false
-
-  - name: Check mysqld service
-    service: name=mysqld state=started enabled=yes
-    become: yes
-
-  - name: Check mysql-check service
-    service: name=mysql-check state=started enabled=yes
-    become: yes
-
-  - name: Check if mysql-check is available
-    shell: curl -sL -w "%{http_code}" localhost:8082 -o /dev/null | grep 200
-    args:
-      warn: false
+  roles:
+    - base
+    - role: nginx-base
+    - role: web-service
+      vars:
+        backend:
+          - context: msg-service
+            hostip: "{{ hostvars['app_tier']['ansible_default_ipv4']['address'] }}"
+            hostport: "{{ hostvars['app_tier']['msg_service_port'] }}"
+          - context: mysql-check
+            hostip: "{{ hostvars['app_tier']['ansible_default_ipv4']['address'] }}"
+            hostport: "{{ hostvars['app_tier']['mysql_check_port'] }}"

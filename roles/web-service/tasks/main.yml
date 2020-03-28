@@ -1,0 +1,13 @@
+
+- name: Copy nginx-backend config
+  become: yes
+  template:
+    src: backend.conf
+    dest: /etc/nginx/conf.d/
+  notify: restart nginx
+
+# just don't want to maintain selinux
+- name: Disable SELinux
+  become: yes
+  selinux:
+    state: disabled

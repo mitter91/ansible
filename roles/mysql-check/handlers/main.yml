@@ -7,11 +7,12 @@
 
 - name: mysql_check_fact
   become: yes
-  copy: 
+  copy:
     content: >
       {
-          "PORT": {{ mysql_check_port | default('8081') }},
-          "SERVICEUSER": {{ mysql_check_user | default('mysql-check') }},
-          "INSTALLATIONTIME": "{{ ansible_date_time.iso8601 }}"
+       "PORT": "{{ mysql_check_port | default('8081') }}",
+       "SERVICEUSER": "{{ mysql_check_user | default('mysql-check') }}",
+       "USER_INIT": true,
+       "INSTALLATIONTIME": "{{ ansible_date_time.iso8601 }}"
       }
     dest: /etc/ansible/facts.d/mysql_check.fact

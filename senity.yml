@@ -1,0 +1,48 @@
+- hosts: ansible
+  tasks:
+  - name: checking facts
+    debug:
+      msg: "checking facts"
+
+- hosts: app_tier
+  tasks:
+  - name: Check msg-service service
+    service: name=msg-service state=started enabled=yes
+    become: yes
+
+  - name: Check msg-service process via shell
+    shell: ps -eo cmd | grep -v grep | grep msg-server
+    args:
+      warn: false
+
+  - name: Get msg-server on port
+    command: "netstat -tunlp | grep ':{{ hostvars['app_tier']['msg_service_port'] }} '"
+    register: test
+    failed_when: not 'msg-server' in test.stdout
+    changed_when: false
+    become: yes
+
+  - name: Get mysql-check on port
+    command: "netstat -tunlp | grep ':{{ hostvars['app_tier']['mysql_check_port'] }}  '"
+    register: test
+    failed_when: not 'mysql-check' in test.stdout
+    changed_when: false
+    become: yes
+
+- hosts: web_tier
+  tasks:
+  - name: Check if msg-service show right
+    shell: "curl -sL {{ hostvars['app_tier']['ansible_default_ipv4']['address'] }}:{{ hostvars['app_tier']['msg_service_port'] }} | grep 'a semi SH'"
+    args:
+      warn: false
+
+- hosts: db_tier
+  tasks:
+  - name: Check mysqld service
+    service: name=mysqld state=started enabled=yes
+    become: yes
+
+  - name: Check if mysql-check is available
+    shell: "curl -sL -w '%{http_code}' {{ hostvars['app_tier']['ansible_default_ipv4']['address'] }}:{{ hostvars['app_tier']['mysql_check_port'] }} -o /dev/null | grep 200"
+    args:
+      warn: false
